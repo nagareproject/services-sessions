@@ -154,7 +154,7 @@ class SessionService(plugin.Plugin):
 
     def _handle_request(self, chain, session, **params):
         set_session(session)
-        return chain.next(**params)
+        return chain.next(session=session, **params)
 
     def handle_request(self, chain, request, response, **params):
         new_session, session_id, state_id = self.get_state_ids(request)
