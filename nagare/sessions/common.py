@@ -11,9 +11,9 @@
 
 import random
 try:
-    import cPickle
+    from cPickle import Pickler, Unpickler
 except ImportError:
-    import pickle as cPickle
+    from pickle import Pickler, Unpickler
 
 from nagare.services import plugin
 from nagare.server import reference
@@ -27,9 +27,8 @@ class Sessions(plugin.Plugin):
     """
     CONFIG_SPEC = dict(
         plugin.Plugin.CONFIG_SPEC,
-        # Todo: configurable picker
-        # pickler=string(default="cPickle:Pickler")',
-        # unpickler='string(default="cPickle:Unpickler")',
+        pickler='string(default="nagare.sessions.common:Pickler")',
+        unpickler='string(default="nagare.sessions.common:Unpickler")',
         serializer='string(default="nagare.sessions.serializer:Dummy")',
         reset_on_reload='boolean(default=True)'
     )
@@ -37,7 +36,7 @@ class Sessions(plugin.Plugin):
     def __init__(
         self,
         name, dist,
-        pickler=cPickle.Pickler, unpickler=cPickle.Unpickler,
+        pickler=Pickler, unpickler=Unpickler,
         serializer=serializer.Dummy,
         reset_on_reload=True,
         publisher_service=None

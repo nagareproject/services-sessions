@@ -12,19 +12,39 @@ class SessionError(LookupError):
     pass
 
 
-class ExpirationError(SessionError):
+class CriticalSessionError(SessionError):
+    pass
+
+
+class LockError(CriticalSessionError):
+    """Raised when an exclusive lock on a session can't be acquired
+    """
+    pass
+
+
+class StorageError(CriticalSessionError):
+    """Raised when the serialized session can't be stored / retreived
+    """
+    pass
+
+
+class InvalidSessionError(SessionError):
+    pass
+
+
+class ExpirationError(InvalidSessionError):
     """Raised when a session or a state id is no longer valid
     """
     pass
 
 
-class SessionSecurityError(SessionError):
+class SessionSecurityError(InvalidSessionError):
     """Raised when the secure id of a session is not valid
     """
     pass
 
 
-class StateError(SessionError):
+class StateError(InvalidSessionError):
     """Raise when a state can't be deserialized
     '"""
     pass

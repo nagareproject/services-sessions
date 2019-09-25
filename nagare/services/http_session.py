@@ -53,7 +53,10 @@ class Session(object):
     def enter(self):
         lock = self.create() if self.is_new else self.get_lock()
 
-        with lock:
+        with lock as status:
+            if not status:
+                raise exceptions.LockError('Session {}, state {}'.format(self.session_id, self.state_id))
+
             yield self.fetch()
             self.store()
 
@@ -184,7 +187,7 @@ class SessionService(plugin.Plugin):
                 session.use_same_state = use_same_state or not self.states_history
 
                 return response
-        except exceptions.SessionError:
+        except exceptions.InvalidSessionError:
             response = request.create_redirect_response()
 
             self.delete_security_cookie(request, response)
