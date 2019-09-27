@@ -64,6 +64,9 @@ class Sessions(plugin.Plugin):
     def generate_id():
         return random.randint(1000000000000000, 9999999999999999)
 
+    def handle_start(self, app):
+        pass
+
     def reload(self):
         pass
 
@@ -223,6 +226,9 @@ class SessionsSelection(SelectionService):
     @property
     def DESC(self):
         return 'Proxy to the <%s> sessions manager' % self.type
+
+    def handle_start(self, app):
+        self.service.handle_start(app)
 
     def handle_reload(self):
         self.service.handle_reload()
