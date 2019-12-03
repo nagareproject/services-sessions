@@ -24,6 +24,7 @@ class Session(object):
         self.use_same_state = use_same_state
 
         self.data = {}
+        self.is_expired = False
 
     def get_lock(self):
         return self.session.get_lock(self.session_id)
@@ -33,6 +34,9 @@ class Session(object):
         self.previous_state_id = self.state_id
 
         return lock
+
+    def delete(self):
+        self.session.delete(self.session_id)
 
     def fetch(self):
         if self.is_new:
@@ -58,7 +62,11 @@ class Session(object):
                 raise exceptions.LockError('Session {}, state {}'.format(self.session_id, self.state_id))
 
             yield self.fetch()
-            self.store()
+
+            if self.is_expired:
+                self.delete()
+            else:
+                self.store()
 
 
 class SessionService(plugin.Plugin):
@@ -170,9 +178,6 @@ class SessionService(plugin.Plugin):
                 if not session.is_new and secure_token and (session.secure_token != secure_token):
                     raise exceptions.SessionSecurityError()
 
-                self.set_security_cookie(request, response, session.secure_token)
-                self.set_session_cookie(request, response, session.session_id)
-
                 response = self._handle_request(
                     chain,
                     request=request, response=response,
@@ -183,8 +188,19 @@ class SessionService(plugin.Plugin):
                     **params
                 )
 
-                use_same_state = use_same_state or getattr(response, 'use_same_state', False)
-                session.use_same_state = use_same_state or not self.states_history
+                delete_session = getattr(response, 'delete_session', False)
+
+                session.is_expired = delete_session
+
+                if delete_session:
+                    self.delete_security_cookie(request, response)
+                    self.delete_session_cookie(request, response)
+                else:
+                    self.set_security_cookie(request, response, session.secure_token)
+                    self.set_session_cookie(request, response, session.session_id)
+
+                use_same_state = use_same_state or getattr(response, 'use_same_state', False) or not self.states_history
+                session.use_same_state = use_same_state
 
                 return response
         except exceptions.InvalidSessionError:

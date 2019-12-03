@@ -248,3 +248,6 @@ class SessionsSelection(SelectionService):
 
     def set_dispatch_table(self, dispatch_table):
         self.service.set_dispatch_table(dispatch_table)
+
+    def delete(self, session_id):
+        self.service.delete(session_id)
