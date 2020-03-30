@@ -106,7 +106,8 @@ class SessionService(plugin.Plugin):
         self.local = local_service
         self.session = session_service.service
 
-    def get_cookie(self, request, name):
+    @staticmethod
+    def get_cookie(request, name):
         cookie = request.cookies.get(name)
         return (None, None) if (cookie is None) or (':' not in cookie) else cookie.split(':')
 
@@ -118,7 +119,8 @@ class SessionService(plugin.Plugin):
         data, _ = self.get_cookie(request, self.session_cookie['name'])
         return int(data) if data else 0
 
-    def set_cookie(self, request, response, name, data, **config):
+    @staticmethod
+    def set_cookie(request, response, name, data, **config):
         if name:
             response.set_cookie(name, data + ':' + request.script_name, path=request.script_name, **config)
 
@@ -128,7 +130,8 @@ class SessionService(plugin.Plugin):
     def set_session_cookie(self, request, response, session_id):
         self.set_cookie(request, response, data=str(session_id), **self.session_cookie)
 
-    def delete_cookie(self, request, response, name, **config):
+    @staticmethod
+    def delete_cookie(request, response, name, **config):
         if name:
             response.delete_cookie(name, **config)
 
@@ -163,9 +166,9 @@ class SessionService(plugin.Plugin):
 
         return (False, session_id, state_id) if session_id is not None else (True, None, None)
 
-    def _handle_request(self, chain, session, **params):
-        set_session(session)
-        return chain.next(session=session, **params)
+    @staticmethod
+    def _handle_request(response, **params):
+        return response
 
     def handle_request(self, chain, request, response, **params):
         new_session, session_id, state_id = self.get_state_ids(request)
@@ -175,11 +178,12 @@ class SessionService(plugin.Plugin):
 
         try:
             with session.enter() as (data, callbacks):
-                if not session.is_new and secure_token and (session.secure_token != secure_token):
+                if not session.is_new and self.security_cookie['name'] and (session.secure_token != secure_token):
                     raise exceptions.SessionSecurityError()
 
-                response = self._handle_request(
-                    chain,
+                set_session(data)
+
+                response = chain.next(
                     request=request, response=response,
                     session_id=session.session_id,
                     previous_state_id=session.previous_state_id,
@@ -188,9 +192,7 @@ class SessionService(plugin.Plugin):
                     **params
                 )
 
-                delete_session = getattr(response, 'delete_session', False)
-
-                session.is_expired = delete_session
+                session.is_expired = delete_session = getattr(response, 'delete_session', False)
 
                 if delete_session:
                     self.delete_security_cookie(request, response)
@@ -202,7 +204,8 @@ class SessionService(plugin.Plugin):
                 use_same_state = use_same_state or getattr(response, 'use_same_state', False) or not self.states_history
                 session.use_same_state = use_same_state
 
-                return response
+                return self._handle_request(request=request, response=response, **params)
+
         except exceptions.InvalidSessionError:
             response = request.create_redirect_response()
 
