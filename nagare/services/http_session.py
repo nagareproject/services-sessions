@@ -95,9 +95,15 @@ class SessionService(plugin.Plugin):
         name, dist,
         states_history,
         session_cookie, security_cookie,
-        local_service, session_service
+        local_service, session_service,
+        **config
     ):
-        super(SessionService, self).__init__(name, dist)
+        super(SessionService, self).__init__(
+            name, dist,
+            states_history=states_history,
+            session_cookie=session_cookie, security_cookie=security_cookie,
+            **config
+        )
 
         self.states_history = states_history
 
@@ -153,6 +159,11 @@ class SessionService(plugin.Plugin):
           - session id
           - state id
         """
+        state = request.params.get('state')
+        if state and state.startswith('#oauth#-') and ('code' in request.params):
+            _, session_id, state_id = state.split('-')
+            return int(session_id), int(state_id)
+
         try:
             return (
                 self.get_session_cookie(request) or int(request.params['_s']),
