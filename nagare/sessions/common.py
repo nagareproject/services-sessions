@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2019 Net-ng.
+# Copyright (c) 2008-2020 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -39,7 +39,8 @@ class Sessions(plugin.Plugin):
         pickler=Pickler, unpickler=Unpickler,
         serializer=serializer.Dummy,
         reset_on_reload=True,
-        publisher_service=None
+        publisher_service=None,
+        **config
     ):
         """Initialization
 
@@ -48,7 +49,13 @@ class Sessions(plugin.Plugin):
           - ``pickler`` -- pickler used by the serializer
           - ``unpickler`` -- unpickler used by the serializer
         """
-        super(Sessions, self).__init__(name, dist)
+        super(Sessions, self).__init__(
+            name, dist,
+            pickler=pickler, unpickler=unpickler,
+            serializer=serializer,
+            reset_on_reload=reset_on_reload,
+            **config
+        )
 
         publisher = publisher_service.service
         self.check_concurrence(publisher.has_multi_processes, publisher.has_multi_threads)
@@ -227,6 +234,10 @@ class SessionsSelection(SelectionService):
     def DESC(self):
         return 'Proxy to the <%s> sessions manager' % self.type
 
+    @property
+    def plugin_config(self):
+        return dict(super(SessionsSelection, self).plugin_config, type=self.type)
+
     def handle_start(self, app):
         self.service.handle_start(app)
 
@@ -234,14 +245,14 @@ class SessionsSelection(SelectionService):
         self.service.handle_reload()
 
     def _load_plugin(self, name, dist, plugin_cls, initial_config, config, *args, **kw):
-        service, config = super(SessionsSelection, self)._load_plugin(
+        service = super(SessionsSelection, self)._load_plugin(
             name, dist,
             plugin_cls, initial_config, config,
             *args, **kw
         )
         service.plugin_category = 'nagare.sessions'
 
-        return service, config
+        return service
 
     def set_persistent_id(self, persistent_id):
         self.service.set_persistent_id(persistent_id)
