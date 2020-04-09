@@ -25,8 +25,11 @@ from . import serializer
 class Sessions(plugin.Plugin):
     """The sessions managers
     """
+    PLUGIN_CATEGORY = 'nagare.sessions'
+
     CONFIG_SPEC = dict(
         plugin.Plugin.CONFIG_SPEC,
+        debug='boolean(default=False)',
         pickler='string(default="nagare.sessions.common:Pickler")',
         unpickler='string(default="nagare.sessions.common:Unpickler")',
         serializer='string(default="nagare.sessions.serializer:Dummy")',
@@ -36,6 +39,7 @@ class Sessions(plugin.Plugin):
     def __init__(
         self,
         name, dist,
+        debug=False,
         pickler=Pickler, unpickler=Unpickler,
         serializer=serializer.Dummy,
         reset_on_reload=True,
@@ -51,6 +55,7 @@ class Sessions(plugin.Plugin):
         """
         super(Sessions, self).__init__(
             name, dist,
+            debug=debug,
             pickler=pickler, unpickler=unpickler,
             serializer=serializer,
             reset_on_reload=reset_on_reload,
@@ -63,7 +68,7 @@ class Sessions(plugin.Plugin):
         pickler = reference.load_object(pickler)[0] if isinstance(pickler, str) else pickler
         unpickler = reference.load_object(unpickler)[0] if isinstance(unpickler, str) else unpickler
         serializer = reference.load_object(serializer)[0] if isinstance(serializer, str) else serializer
-        self.serializer = serializer(pickler, unpickler)
+        self.serializer = serializer(pickler, unpickler, debug, self.logger)
 
         self.reset_on_reload = reset_on_reload
 
@@ -243,16 +248,6 @@ class SessionsSelection(SelectionService):
 
     def handle_reload(self):
         self.service.handle_reload()
-
-    def _load_plugin(self, name, dist, plugin_cls, initial_config, config, *args, **kw):
-        service = super(SessionsSelection, self)._load_plugin(
-            name, dist,
-            plugin_cls, initial_config, config,
-            *args, **kw
-        )
-        service.plugin_category = 'nagare.sessions'
-
-        return service
 
     def set_persistent_id(self, persistent_id):
         self.service.set_persistent_id(persistent_id)

@@ -31,8 +31,16 @@ class DummyFile(object):
         pass
 
 
+class Result(object):
+    def __init__(self):
+        self.session_data = {}
+        self.tasklets = set()
+        self.callbacks = {}
+        self.components = 0
+
+
 class Dummy(object):
-    def __init__(self, pickler, unpickler):
+    def __init__(self, pickler, unpickler, debug, logger):
         """Initialization
 
           - ``pickler`` -- pickler to use
@@ -40,6 +48,8 @@ class Dummy(object):
         """
         self.pickler = pickler
         self.unpickler = unpickler
+        self.debug = debug
+        self.logger = logger
         self.persistent_id = None
         self.dispatch_table = lambda *args: {}
 
@@ -55,13 +65,11 @@ class Dummy(object):
           - data to keep into the session
           - data to keep into the state
         """
-        session_data = {}
-        tasklets = set()
-        callbacks = {}
+        result = Result()
 
         # Serialize the objects graph and extract all the callbacks
         def persistent_id(o):
-            return self.persistent_id(o, clean_callbacks, callbacks, session_data, tasklets)
+            return self.persistent_id(o, clean_callbacks, result)
 
         if PY2:
             if self.persistent_id:
@@ -71,12 +79,12 @@ class Dummy(object):
                 pickler.persistent_id = persistent_id
 
             dispatch_table = copyreg.dispatch_table.copy()
-            dispatch_table.update(self.dispatch_table(clean_callbacks, callbacks))
+            dispatch_table.update(self.dispatch_table(clean_callbacks, result))
             pickler.dispatch_table = dispatch_table
 
         pickler.dump(data)
 
-        return session_data, callbacks, tasklets
+        return result.session_data, result.components, result.callbacks, result.tasklets
 
     def dumps(self, data, clean_callbacks):
         """Serialize an objects graph
@@ -90,7 +98,7 @@ class Dummy(object):
           - data kept into the state
         """
         pickler = self.pickler(DummyFile(), protocol=-1)
-        session_data, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
+        session_data, components, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
 
         # This dummy serializer returns the data untouched
         return None, (data, callbacks)
@@ -125,7 +133,7 @@ class Pickle(Dummy):
         pickler = self.pickler(f, protocol=-1)
 
         # Pickle the data
-        session_data, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
+        session_data, components, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
 
         # Pickle the callbacks
         if PY2:
@@ -144,6 +152,15 @@ class Pickle(Dummy):
         f = BuffIO()
         self.pickler(f, protocol=-1).dump(session_data)
         session_data = f.getvalue()
+
+        if self.debug:
+            if components:
+                self.logger.debug(
+                    '%d tasklets - %d components - %d callbacks - %d session bytes - %d state bytes',
+                    len(tasklets), components, len(callbacks), len(session_data), len(state_data)
+                )
+            else:
+                self.logger.debug('%d state bytes', len(state_data))
 
         return session_data, state_data
 
