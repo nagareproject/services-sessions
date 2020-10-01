@@ -77,16 +77,26 @@ class SessionService(plugin.Plugin):
 
         session_cookie={
             'name': 'string(default="nagare-session")',
+            'max_age': 'integer(default=None)',
+            'path': 'string(default="$app_url/")',
+            'domain': 'string(default=None)',
             'secure': 'boolean(default=False)',
             'httponly': 'boolean(default=True)',
-            'max_age': 'integer(default=None)'
+            'comment': 'string(default=None)',
+            'overwrite': 'boolean(default=False)',
+            'samesite': 'string(default="strict")'
         },
 
         security_cookie={
             'name': 'string(default="nagare-token")',
+            'max_age': 'integer(default=None)',
+            'path': 'string(default="$app_url/")',
+            'domain': 'string(default=None)',
             'secure': 'boolean(default=False)',
             'httponly': 'boolean(default=True)',
-            'max_age': 'integer(default=None)'
+            'comment': 'string(default=None)',
+            'overwrite': 'boolean(default=False)',
+            'samesite': 'string(default="strict")'
         }
     )
 
@@ -95,7 +105,7 @@ class SessionService(plugin.Plugin):
         name, dist,
         states_history,
         session_cookie, security_cookie,
-        local_service, session_service,
+        local_service, session_service, services_service,
         **config
     ):
         super(SessionService, self).__init__(
@@ -111,6 +121,7 @@ class SessionService(plugin.Plugin):
         self.security_cookie = security_cookie
         self.local = local_service
         self.session = session_service.service
+        self.services = services_service
 
     @staticmethod
     def get_cookie(request, name):
@@ -128,7 +139,7 @@ class SessionService(plugin.Plugin):
     @staticmethod
     def set_cookie(request, response, name, data, **config):
         if name:
-            response.set_cookie(name, data + ':' + request.script_name, path=request.script_name, **config)
+            response.set_cookie(name, data + ':' + request.script_name, **config)
 
     def set_security_cookie(self, request, response, secure_token):
         self.set_cookie(request, response, data=secure_token.decode('ascii'), **self.security_cookie)
@@ -160,9 +171,12 @@ class SessionService(plugin.Plugin):
           - state id
         """
         state = request.params.get('state')
-        if state and state.startswith('#oauth#-') and ('code' in request.params):
-            _, session_id, state_id = state.split('-')
-            return int(session_id), int(state_id)
+        if state and state.startswith('#oauth#') and ('code' in request.params):
+            service_name = state.split('#')[2]
+            service = self.services.get(service_name)
+            if service is not None:
+                _, session_id, state_id = self.services[service_name].is_auth_response(request)
+                return session_id, state_id
 
         try:
             return (
