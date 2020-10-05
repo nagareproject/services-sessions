@@ -84,7 +84,7 @@ class SessionService(plugin.Plugin):
             'httponly': 'boolean(default=True)',
             'comment': 'string(default=None)',
             'overwrite': 'boolean(default=False)',
-            'samesite': 'string(default="strict")'
+            'samesite': 'string(default="lax")'
         },
 
         security_cookie={
@@ -96,7 +96,7 @@ class SessionService(plugin.Plugin):
             'httponly': 'boolean(default=True)',
             'comment': 'string(default=None)',
             'overwrite': 'boolean(default=False)',
-            'samesite': 'string(default="strict")'
+            'samesite': 'string(default="lax")'
         }
     )
 
