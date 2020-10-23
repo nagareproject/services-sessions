@@ -175,7 +175,7 @@ class SessionService(plugin.Plugin):
             service_name = state.split('#')[2]
             service = self.services.get(service_name)
             if service is not None:
-                _, session_id, state_id = self.services[service_name].is_auth_response(request)
+                _, session_id, state_id, _ = self.services[service_name].is_auth_response(request)
                 return session_id, state_id
 
         try:
