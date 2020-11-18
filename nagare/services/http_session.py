@@ -211,7 +211,6 @@ class SessionService(plugin.Plugin):
                 response = chain.next(
                     request=request, response=response,
                     session_id=session.session_id,
-                    previous_state_id=session.previous_state_id,
                     state_id=session.state_id,
                     session=data, callbacks=callbacks,
                     **params
@@ -226,7 +225,7 @@ class SessionService(plugin.Plugin):
                     self.set_security_cookie(request, response, session.secure_token)
                     self.set_session_cookie(request, response, session.session_id)
 
-                use_same_state = use_same_state or getattr(response, 'use_same_state', False) or not self.states_history
+                use_same_state = use_same_state or not self.states_history
                 session.use_same_state = use_same_state
 
                 return self._handle_request(request=request, response=response, **params)
