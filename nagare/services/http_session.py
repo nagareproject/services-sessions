@@ -105,7 +105,7 @@ class SessionService(plugin.Plugin):
         name, dist,
         states_history,
         session_cookie, security_cookie,
-        local_service, session_service, services_service,
+        session_service, services_service,
         **config
     ):
         super(SessionService, self).__init__(
@@ -119,7 +119,6 @@ class SessionService(plugin.Plugin):
 
         self.session_cookie = session_cookie
         self.security_cookie = security_cookie
-        self.local = local_service
         self.session = session_service.service
         self.services = services_service
 
