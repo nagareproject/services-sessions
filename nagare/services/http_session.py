@@ -202,8 +202,12 @@ class SessionService(plugin.Plugin):
 
         try:
             with session.enter() as (data, callbacks):
-                if not session.is_new and self.security_cookie['name'] and (session.secure_token != secure_token):
-                    raise exceptions.SessionSecurityError()
+                security_cookie_name = self.security_cookie['name']
+                if not session.is_new and security_cookie_name:
+                    if not secure_token:
+                        raise exceptions.SessionSecurityError("security cookie '{}' not found".format(security_cookie_name))
+                    if session.secure_token != secure_token:
+                        raise exceptions.SessionSecurityError("invalid security cookie '{}'".format(security_cookie_name))
 
                 set_session(data)
 
@@ -229,7 +233,16 @@ class SessionService(plugin.Plugin):
 
                 return self._handle_request(request=request, response=response, **params)
 
-        except exceptions.InvalidSessionError:
+        except exceptions.CriticalSessionError as session_error:
+            error = session_error.name() + ((': ' + session_error.args[0]) if session_error.args else '')
+
+            self.logger.critical(error)
+            raise
+
+        except exceptions.InvalidSessionError as session_error:
+            error = session_error.name() + ((': ' + session_error.args[0]) if session_error.args else '')
+            self.logger.info(error)
+
             response = request.create_redirect_response()
 
             self.delete_security_cookie(request, response)

@@ -183,4 +183,4 @@ class Pickle(Dummy):
         try:
             return p.load(), p.load()
         except Exception as e:
-            raise StateError(e.args[0])
+            raise StateError(e.args[0] if e.args else '')
