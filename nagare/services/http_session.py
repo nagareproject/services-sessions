@@ -111,14 +111,18 @@ class SessionService(plugin.Plugin):
         super(SessionService, self).__init__(
             name, dist,
             states_history=states_history,
-            session_cookie=session_cookie, security_cookie=security_cookie,
+            session_cookie=session_cookie, security_cookie=security_cookie.copy(),
             **config
         )
 
         self.states_history = states_history
 
         self.session_cookie = session_cookie
+
+        if not security_cookie['samesite']:
+            del security_cookie['samesite']
         self.security_cookie = security_cookie
+
         self.session = session_service.service
         self.services = services_service
 
@@ -170,12 +174,20 @@ class SessionService(plugin.Plugin):
           - state id
         """
         state = request.params.get('state')
-        if state and state.startswith('#oauth#') and ('code' in request.params):
-            service_name = state.split('#')[2]
-            service = self.services.get(service_name)
-            if service is not None:
-                _, session_id, state_id, _ = self.services[service_name].is_auth_response(request)
-                return session_id, state_id
+        has_security_state = state and ('code' in request.params)
+
+        if not has_security_state:
+            state = request.params.get('RelayState')
+            has_security_state = state and ('SAMLResponse' in request.params)
+
+        if has_security_state and state.startswith('#'):
+            try:
+                service_name = state.split('#')[1]
+                is_valid, session_id, state_id = self.services[service_name].is_auth_response(request)[:3]
+                if is_valid:
+                    return session_id, state_id
+            except Exception:
+                pass
 
         try:
             return (
