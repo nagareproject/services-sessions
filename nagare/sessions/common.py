@@ -32,8 +32,7 @@ class Sessions(plugin.Plugin):
         debug='boolean(default=False)',
         pickler='string(default="nagare.sessions.common:Pickler")',
         unpickler='string(default="nagare.sessions.common:Unpickler")',
-        serializer='string(default="nagare.sessions.serializer:Dummy")',
-        reset_on_reload='boolean(default=True)'
+        serializer='string(default="nagare.sessions.serializer:Dummy")'
     )
 
     def __init__(
@@ -42,7 +41,6 @@ class Sessions(plugin.Plugin):
         debug=False,
         pickler=Pickler, unpickler=Unpickler,
         serializer=serializer.Dummy,
-        reset_on_reload=True,
         publisher_service=None,
         **config
     ):
@@ -58,7 +56,6 @@ class Sessions(plugin.Plugin):
             debug=debug,
             pickler=pickler, unpickler=unpickler,
             serializer=serializer,
-            reset_on_reload=reset_on_reload,
             **config
         )
 
@@ -70,8 +67,6 @@ class Sessions(plugin.Plugin):
         serializer = reference.load_object(serializer)[0] if isinstance(serializer, str) else serializer
         self.serializer = serializer(pickler, unpickler, debug, self.logger)
 
-        self.reset_on_reload = reset_on_reload
-
     @staticmethod
     def generate_id():
         return random.randint(1000000000000000, 9999999999999999)
@@ -79,12 +74,8 @@ class Sessions(plugin.Plugin):
     def handle_start(self, app):
         pass
 
-    def reload(self):
-        pass
-
     def handle_reload(self):
-        if self.reset_on_reload:
-            self.reload()
+        pass
 
     def set_persistent_id(self, persistent_id):
         self.serializer.persistent_id = persistent_id
