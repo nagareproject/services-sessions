@@ -116,6 +116,7 @@ class Sessions(plugin.Plugin):
           - secure number associated to the session
           - objects graph
         """
+        self.logger.debug('fetching session {} - state {}'.format(session_id, state_id))
         new_state_id, secure_token, session_data, state_data = self._fetch(session_id, state_id)
         return new_state_id, secure_token, self.serializer.loads(session_data, state_data)
 
@@ -129,6 +130,7 @@ class Sessions(plugin.Plugin):
           - ``use_same_state`` -- is a copy of this state to be created?
           - ``data`` -- the objects graph
         """
+        self.logger.debug('storing session {} - state {}'.format(session_id, state_id))
         session_data, state_data = self.serializer.dumps(data, not use_same_state)
         self._store(session_id, state_id, secure_token, use_same_state, session_data, state_data)
 
