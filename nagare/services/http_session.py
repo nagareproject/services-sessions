@@ -173,22 +173,6 @@ class SessionService(plugin.Plugin):
           - session id
           - state id
         """
-        state = request.params.get('state')
-        has_security_state = state and ('code' in request.params)
-
-        if not has_security_state:
-            state = request.params.get('RelayState')
-            has_security_state = state and ('SAMLResponse' in request.params)
-
-        if has_security_state and state.startswith('#'):
-            try:
-                service_name = state.split('#')[1]
-                is_valid, session_id, state_id = self.services[service_name].is_auth_response(request)[:3]
-                if is_valid:
-                    return session_id, state_id
-            except Exception:
-                pass
-
         try:
             return (
                 self.get_session_cookie(request) or int(request.params['_s']),
@@ -206,8 +190,12 @@ class SessionService(plugin.Plugin):
     def _handle_request(response, **params):
         return response
 
-    def handle_request(self, chain, request, response, **params):
-        new_session, session_id, state_id = self.get_state_ids(request)
+    def handle_request(self, chain, request, response, session_id=None, state_id=None, **params):
+        if session_id and state_id:
+            new_session = False
+        else:
+            new_session, session_id, state_id = self.get_state_ids(request)
+
         use_same_state = request.is_xhr or not self.states_history
         secure_token = self.get_security_cookie(request)
         session = Session(self.session, new_session, secure_token, session_id, state_id, use_same_state)
