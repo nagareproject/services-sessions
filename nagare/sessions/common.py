@@ -228,11 +228,7 @@ class SessionsSelection(SelectionService):
 
     @property
     def DESC(self):
-        return 'Proxy to the <%s> sessions manager' % self.type
-
-    @property
-    def plugin_config(self):
-        return dict(super(SessionsSelection, self).plugin_config, type=self.type)
+        return 'Proxy to the <%s> sessions manager' % self.selector
 
     def handle_start(self, app):
         self.service.handle_start(app)
