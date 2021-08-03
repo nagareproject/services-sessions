@@ -203,11 +203,11 @@ class SessionService(plugin.Plugin):
         try:
             with session.enter() as (data, callbacks):
                 security_cookie_name = self.security_cookie['name']
-                if not session.is_new and security_cookie_name:
+                if not session.is_new and security_cookie_name and not request.is_authenticated:
                     if not secure_token:
-                        raise exceptions.SessionSecurityError("security cookie '{}' not found".format(security_cookie_name))
+                        raise exceptions.SessionSecurityError("cookie '{}' not found".format(security_cookie_name))
                     if session.secure_token != secure_token:
-                        raise exceptions.SessionSecurityError("invalid security cookie '{}'".format(security_cookie_name))
+                        raise exceptions.SessionSecurityError("invalid token in cookie '{}'".format(security_cookie_name))
 
                 set_session(data)
 
