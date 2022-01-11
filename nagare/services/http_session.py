@@ -78,7 +78,7 @@ class SessionService(plugin.Plugin):
         session_cookie={
             'name': 'string(default="nagare-session")',
             'max_age': 'integer(default=None)',
-            'path': 'string(default="$app_url/")',
+            'path': 'string(default="$app_url")',
             'domain': 'string(default=None)',
             'secure': 'boolean(default=False)',
             'httponly': 'boolean(default=True)',
@@ -90,7 +90,7 @@ class SessionService(plugin.Plugin):
         security_cookie={
             'name': 'string(default="nagare-token")',
             'max_age': 'integer(default=None)',
-            'path': 'string(default="$app_url/")',
+            'path': 'string(default="$app_url")',
             'domain': 'string(default=None)',
             'secure': 'boolean(default=False)',
             'httponly': 'boolean(default=True)',
@@ -142,7 +142,7 @@ class SessionService(plugin.Plugin):
     @staticmethod
     def set_cookie(request, response, name, data, **config):
         if name:
-            response.set_cookie(name, data + ':' + request.script_name, **config)
+            response.set_cookie(name, '{}:{}/'.format(data, request.script_name.rstrip('/')), **config)
 
     def set_security_cookie(self, request, response, secure_token):
         self.set_cookie(request, response, data=secure_token.decode('ascii'), **self.security_cookie)
@@ -222,7 +222,6 @@ class SessionService(plugin.Plugin):
                 session.is_expired = delete_session = getattr(response, 'delete_session', False)
 
                 if delete_session:
-                    self.delete_security_cookie(request, response)
                     self.delete_session_cookie(request, response)
                 else:
                     self.set_security_cookie(request, response, session.secure_token)
@@ -244,8 +243,6 @@ class SessionService(plugin.Plugin):
             self.logger.info(error)
 
             response = request.create_redirect_response()
-
-            self.delete_security_cookie(request, response)
             self.delete_session_cookie(request, response)
 
             raise response
