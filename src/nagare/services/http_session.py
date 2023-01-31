@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2022 Net-ng.
+# Copyright (c) 2008-2023 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -74,7 +74,6 @@ class SessionService(plugin.Plugin):
     CONFIG_SPEC = dict(
         plugin.Plugin.CONFIG_SPEC,
         states_history='boolean(default=False)',
-
         session_cookie={
             'name': 'string(default="nagare-session")',
             'max_age': 'integer(default=None)',
@@ -84,9 +83,8 @@ class SessionService(plugin.Plugin):
             'httponly': 'boolean(default=True)',
             'comment': 'string(default=None)',
             'overwrite': 'boolean(default=False)',
-            'samesite': 'string(default="lax")'
+            'samesite': 'string(default="lax")',
         },
-
         security_cookie={
             'name': 'string(default="nagare-token")',
             'max_age': 'integer(default=None)',
@@ -96,23 +94,20 @@ class SessionService(plugin.Plugin):
             'httponly': 'boolean(default=True)',
             'comment': 'string(default=None)',
             'overwrite': 'boolean(default=False)',
-            'samesite': 'string(default="lax")'
-        }
+            'samesite': 'string(default="lax")',
+        },
     )
 
     def __init__(
-        self,
-        name, dist,
-        states_history,
-        session_cookie, security_cookie,
-        session_service, services_service,
-        **config
+        self, name, dist, states_history, session_cookie, security_cookie, session_service, services_service, **config
     ):
         super(SessionService, self).__init__(
-            name, dist,
+            name,
+            dist,
             states_history=states_history,
-            session_cookie=session_cookie, security_cookie=security_cookie.copy(),
-            **config
+            session_cookie=session_cookie,
+            security_cookie=security_cookie.copy(),
+            **config,
         )
 
         self.states_history = states_history
@@ -164,7 +159,7 @@ class SessionService(plugin.Plugin):
         self.delete_cookie(request, response, self.session_cookie['name'], path=session_cookie_path)
 
     def extract_state_ids(self, request):
-        """Search the session id and the state id into the request cookies and parameters
+        """Search the session id and the state id into the request cookies and parameters.
 
         In:
           - ``request`` -- the web request
@@ -176,7 +171,7 @@ class SessionService(plugin.Plugin):
         try:
             return (
                 self.get_session_cookie(request) or int(request.params['_s']),
-                int(request.params['_c']) if self.states_history else 0
+                int(request.params['_c']) if self.states_history else 0,
             )
         except (KeyError, ValueError, TypeError):
             return None, None
@@ -191,7 +186,7 @@ class SessionService(plugin.Plugin):
         return response
 
     def handle_request(self, chain, request, response, session_id=None, state_id=None, **params):
-        if session_id and state_id:
+        if (session_id is not None) and (state_id is not None):
             new_session = False
         else:
             new_session, session_id, state_id = self.get_state_ids(request)
@@ -207,16 +202,20 @@ class SessionService(plugin.Plugin):
                     if not secure_token:
                         raise exceptions.SessionSecurityError("cookie '{}' not found".format(security_cookie_name))
                     if session.secure_token != secure_token:
-                        raise exceptions.SessionSecurityError("invalid token in cookie '{}'".format(security_cookie_name))
+                        raise exceptions.SessionSecurityError(
+                            "invalid token in cookie '{}'".format(security_cookie_name)
+                        )
 
                 set_session(data)
 
                 response = chain.next(
-                    request=request, response=response,
+                    request=request,
+                    response=response,
                     session_id=session.session_id,
                     state_id=session.state_id,
-                    session=data, callbacks=callbacks,
-                    **params
+                    session=data,
+                    callbacks=callbacks,
+                    **params,
                 )
 
                 session.is_expired = delete_session = getattr(response, 'delete_session', False)

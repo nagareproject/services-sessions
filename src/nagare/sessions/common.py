@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2022 Net-ng.
+# Copyright (c) 2008-2023 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -7,24 +7,25 @@
 # this distribution.
 # --
 
-"""Base classes for the sessions management"""
+"""Base classes for the sessions management."""
 
 import random
+
 try:
     from cPickle import Pickler, Unpickler
 except ImportError:
     from pickle import Pickler, Unpickler
 
-from nagare.services import plugin
 from nagare.server import reference
 from nagare.server.services import SelectionService
+from nagare.services import plugin
 
 from . import serializer
 
 
 class Sessions(plugin.Plugin):
-    """The sessions managers
-    """
+    """The sessions managers."""
+
     PLUGIN_CATEGORY = 'nagare.sessions'
 
     CONFIG_SPEC = dict(
@@ -32,19 +33,21 @@ class Sessions(plugin.Plugin):
         debug='boolean(default=False)',
         pickler='string(default="nagare.sessions.common:Pickler")',
         unpickler='string(default="nagare.sessions.common:Unpickler")',
-        serializer='string(default="nagare.sessions.serializer:Dummy")'
+        serializer='string(default="nagare.sessions.serializer:Dummy")',
     )
 
     def __init__(
         self,
-        name, dist,
+        name,
+        dist,
         debug=False,
-        pickler=Pickler, unpickler=Unpickler,
+        pickler=Pickler,
+        unpickler=Unpickler,
         serializer=serializer.Dummy,
         publisher_service=None,
-        **config
+        **config,
     ):
-        """Initialization
+        """Initialization.
 
         In:
           - ``serializer`` -- serializer / deserializer of the states
@@ -52,11 +55,7 @@ class Sessions(plugin.Plugin):
           - ``unpickler`` -- unpickler used by the serializer
         """
         super(Sessions, self).__init__(
-            name, dist,
-            debug=debug,
-            pickler=pickler, unpickler=unpickler,
-            serializer=serializer,
-            **config
+            name, dist, debug=debug, pickler=pickler, unpickler=unpickler, serializer=serializer, **config
         )
 
         publisher = publisher_service.service
@@ -94,7 +93,7 @@ class Sessions(plugin.Plugin):
         return session_id
 
     def create(self, secure_token):
-        """Create a new session
+        """Create a new session.
 
         Return:
           - id of the session
@@ -105,7 +104,7 @@ class Sessions(plugin.Plugin):
         return self._create(self.generate_session_id(), secure_token or self.generate_secure_token())
 
     def fetch(self, session_id, state_id):
-        """Retrieve the objects graph of a state
+        """Retrieve the objects graph of a state.
 
         In:
           - ``session_id`` -- session id of this state
@@ -121,7 +120,7 @@ class Sessions(plugin.Plugin):
         return new_state_id, secure_token, self.serializer.loads(session_data, state_data)
 
     def store(self, session_id, state_id, secure_token, use_same_state, data):
-        """Store the state
+        """Store the state.
 
         In:
           - ``session_id`` -- session id of this state
@@ -141,7 +140,7 @@ class Sessions(plugin.Plugin):
 
     @staticmethod
     def check_session_id(session_id):
-        """Test if a session exist
+        """Test if a session exist.
 
         In:
           - ``session_id`` -- id of a session
@@ -152,7 +151,7 @@ class Sessions(plugin.Plugin):
         raise NotImplementedError()
 
     def create_lock(self, session_id):
-        """Create a new lock for a session
+        """Create a new lock for a session.
 
         In:
           - ``session_id`` -- session id
@@ -163,7 +162,7 @@ class Sessions(plugin.Plugin):
         raise NotImplementedError()
 
     def get_lock(self, session_id):
-        """Retrieve the lock of a session
+        """Retrieve the lock of a session.
 
         In:
           - ``session_id`` -- session id
@@ -174,7 +173,7 @@ class Sessions(plugin.Plugin):
         raise NotImplementedError()
 
     def _create(self, session_id, secure_id):
-        """Create a new session
+        """Create a new session.
 
         In:
           - ``session_id`` -- id of the session
@@ -184,7 +183,7 @@ class Sessions(plugin.Plugin):
         raise NotImplementedError()
 
     def delete(self, session_id):
-        """Delete a session
+        """Delete a session.
 
         In:
           - ``session_id`` -- id of the session to delete
@@ -192,7 +191,7 @@ class Sessions(plugin.Plugin):
         raise NotImplementedError()
 
     def _fetch(self, session_id, state_id):
-        """Retrieve a state with its associated objects graph
+        """Retrieve a state with its associated objects graph.
 
         In:
           - ``session_id`` -- session id of this state
@@ -207,7 +206,7 @@ class Sessions(plugin.Plugin):
         raise NotImplementedError()
 
     def _store(self, session_id, state_id, secure_id, use_same_state, session_data, state_data):
-        """Store a state and its associated objects graph
+        """Store a state and its associated objects graph.
 
         In:
           - ``session_id`` -- session id of this state
@@ -224,7 +223,7 @@ class SessionsSelection(SelectionService):
     ENTRY_POINTS = 'nagare.sessions'
     CONFIG_SPEC = dict(
         SelectionService.CONFIG_SPEC,
-        type='string(default="memory", help="name of the session entry-point, registered under [nagare.sessions]")'
+        type='string(default="memory", help="name of the session entry-point, registered under [nagare.sessions]")',
     )
     LOAD_PRIORITY = 90
 

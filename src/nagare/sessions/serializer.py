@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2022 Net-ng.
+# Copyright (c) 2008-2023 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -21,12 +21,12 @@ except ImportError:
 
 from .exceptions import StateError
 
-
-PY2 = (sys.version_info.major == 2)
+PY2 = sys.version_info.major == 2
 
 
 class DummyFile(object):
-    """A write-only file that does nothing"""
+    """A write-only file that does nothing."""
+
     def write(self, data):
         pass
 
@@ -41,10 +41,10 @@ class Result(object):
 
 class Dummy(object):
     def __init__(self, pickler, unpickler, debug, logger):
-        """Initialization
+        """Initialization.
 
-          - ``pickler`` -- pickler to use
-          - ``unpickler`` -- unpickler to use
+        - ``pickler`` -- pickler to use
+        - ``unpickler`` -- unpickler to use
         """
         self.pickler = pickler
         self.unpickler = unpickler
@@ -54,7 +54,7 @@ class Dummy(object):
         self.dispatch_table = lambda *args: {}
 
     def _dumps(self, pickler, data, clean_callbacks):
-        """Serialize an objects graph
+        """Serialize an objects graph.
 
         In:
           - ``pickler`` -- pickler to use
@@ -87,7 +87,7 @@ class Dummy(object):
         return result.session_data, result.components, result.callbacks, result.tasklets
 
     def dumps(self, data, clean_callbacks):
-        """Serialize an objects graph
+        """Serialize an objects graph.
 
         In:
           - ``data`` -- the objects graph
@@ -104,7 +104,7 @@ class Dummy(object):
         return None, (data, callbacks)
 
     def loads(self, session_data, state_data):
-        """Deserialize an objects graph
+        """Deserialize an objects graph.
 
         In:
           - ``session_data`` -- data from the session
@@ -119,7 +119,7 @@ class Dummy(object):
 
 class Pickle(Dummy):
     def dumps(self, data, clean_callbacks):
-        """Serialize an objects graph
+        """Serialize an objects graph.
 
         In:
           - ``data`` -- the objects graph
@@ -157,7 +157,11 @@ class Pickle(Dummy):
             if components:
                 self.logger.debug(
                     '%d tasklets - %d components - %d callbacks - %d session bytes - %d state bytes',
-                    len(tasklets), components, len(callbacks), len(session_data), len(state_data)
+                    len(tasklets),
+                    components,
+                    len(callbacks),
+                    len(session_data),
+                    len(state_data),
                 )
             else:
                 self.logger.debug('%d state bytes', len(state_data))
@@ -165,7 +169,7 @@ class Pickle(Dummy):
         return session_data, state_data
 
     def loads(self, session_data, state_data):
-        """Deserialize an objects graph
+        """Deserialize an objects graph.
 
         In:
           - ``session_data`` -- data from the session

@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2022 Net-ng.
+# Copyright (c) 2008-2023 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -12,6 +12,7 @@ class SessionError(LookupError):
     def name(self):
         return self.__class__.__name__
 
+
 # =================================================================================
 
 
@@ -20,21 +21,16 @@ class CriticalSessionError(SessionError):
 
 
 class LockError(CriticalSessionError):
-    """Raised when an exclusive lock on a session can't be acquired
-    """
-    pass
+    """Raised when an exclusive lock on a session can't be acquired."""
 
 
 class StateError(CriticalSessionError):
-    """Raise when a state can't be deserialized
-    '"""
-    pass
+    """Raise when a state can't be deserialized."""
 
 
 class StorageError(CriticalSessionError):
-    """Raised when the serialized session can't be stored / retreived
-    """
-    pass
+    """Raised when the serialized session can't be stored / retreived."""
+
 
 # =================================================================================
 
@@ -44,12 +40,8 @@ class InvalidSessionError(SessionError):
 
 
 class ExpirationError(InvalidSessionError):
-    """Raised when a session or a state id is no longer valid
-    """
-    pass
+    """Raised when a session or a state id is no longer valid."""
 
 
 class SessionSecurityError(InvalidSessionError):
-    """Raised when the secure id of a session is not valid
-    """
-    pass
+    """Raised when the secure id of a session is not valid."""
