@@ -9,7 +9,9 @@
 
 """Base classes for the sessions management."""
 
+import gzip
 import random
+import zlib
 
 try:
     from cPickle import Pickler, Unpickler
@@ -23,6 +25,47 @@ from nagare.services import plugin
 from . import serializer
 
 
+class Compressor(object):
+    @classmethod
+    def compress(cls, data):
+        compressed_data = cls._compress(data)
+        return compressed_data if len(compressed_data) < len(data) else data
+
+    @classmethod
+    def decompress(cls, data):
+        return cls._decompress(data) if cls.is_compressed(memoryview(data)) else data
+
+    @staticmethod
+    def is_compressed(data):
+        raise NotImplementedError()
+
+    @staticmethod
+    def _compress(cls, data):
+        raise NotImplementedError()
+
+    @staticmethod
+    def _decompress(cls, data):
+        raise NotImplementedError()
+
+
+class GZipCompressor(Compressor):
+    _compress = gzip.compress
+    _decompress = gzip.decompress
+
+    @staticmethod
+    def is_compressed(data):
+        return (data[0] == 0o37) and (data[1] == 0o213)
+
+
+class ZLibCompressor(Compressor):
+    _compress = zlib.compress
+    _decompress = zlib.decompress
+
+    @staticmethod
+    def is_compressed(data):
+        return (data[0] == 0x78) and ((data[0] * 256 + data[1]) % 31 == 0)
+
+
 class Sessions(plugin.Plugin):
     """The sessions managers."""
 
@@ -34,6 +77,8 @@ class Sessions(plugin.Plugin):
         pickler='string(default="nagare.sessions.common:Pickler")',
         unpickler='string(default="nagare.sessions.common:Unpickler")',
         serializer='string(default="nagare.sessions.serializer:Dummy")',
+        compressor='string(default="nagare.sessions.common:ZLibCompressor")',
+        min_compress_len='integer(default=0)',
     )
 
     def __init__(
@@ -44,6 +89,8 @@ class Sessions(plugin.Plugin):
         pickler=Pickler,
         unpickler=Unpickler,
         serializer=serializer.Dummy,
+        compressor=ZLibCompressor,
+        min_compress_len=0,
         publisher_service=None,
         **config,
     ):
@@ -55,7 +102,15 @@ class Sessions(plugin.Plugin):
           - ``unpickler`` -- unpickler used by the serializer
         """
         super(Sessions, self).__init__(
-            name, dist, debug=debug, pickler=pickler, unpickler=unpickler, serializer=serializer, **config
+            name,
+            dist,
+            debug=debug,
+            pickler=pickler,
+            unpickler=unpickler,
+            serializer=serializer,
+            compressor=compressor,
+            min_compress_len=min_compress_len,
+            **config,
         )
 
         publisher = publisher_service.service
@@ -65,6 +120,8 @@ class Sessions(plugin.Plugin):
         unpickler = reference.load_object(unpickler)[0] if isinstance(unpickler, str) else unpickler
         serializer = reference.load_object(serializer)[0] if isinstance(serializer, str) else serializer
         self.serializer = serializer(pickler, unpickler, debug, self.logger)
+        self.compressor = reference.load_object(compressor)[0] if isinstance(compressor, str) else compressor
+        self.min_compress_len = min_compress_len
 
     @staticmethod
     def generate_id():
@@ -117,7 +174,7 @@ class Sessions(plugin.Plugin):
         """
         self.logger.debug('fetching session {} - state {}'.format(session_id, state_id))
         new_state_id, secure_token, session_data, state_data = self._fetch(session_id, state_id)
-        return new_state_id, secure_token, self.serializer.loads(session_data, state_data)
+        return (new_state_id, secure_token, self.serializer.loads(session_data, self.compressor.decompress(state_data)))
 
     def store(self, session_id, state_id, secure_token, use_same_state, data):
         """Store the state.
@@ -131,6 +188,9 @@ class Sessions(plugin.Plugin):
         """
         self.logger.debug('storing session {} - state {}'.format(session_id, state_id))
         session_data, state_data = self.serializer.dumps(data, not use_same_state)
+        if self.min_compress_len and len(state_data) > self.min_compress_len:
+            state_data = self.compressor.compress(state_data)
+
         self._store(session_id, state_id, secure_token, use_same_state, session_data, state_data)
 
     # -------------------------------------------------------------------------
