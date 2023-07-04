@@ -33,7 +33,7 @@ class Compressor(object):
 
     @classmethod
     def decompress(cls, data):
-        return cls._decompress(data) if cls.is_compressed(memoryview(data)) else data
+        return cls._decompress(data) if cls.is_compressed(data) else data
 
     @staticmethod
     def is_compressed(data):
@@ -120,6 +120,7 @@ class Sessions(plugin.Plugin):
         unpickler = reference.load_object(unpickler)[0] if isinstance(unpickler, str) else unpickler
         serializer = reference.load_object(serializer)[0] if isinstance(serializer, str) else serializer
         self.serializer = serializer(pickler, unpickler, debug, self.logger)
+        self.debug = debug
         self.compressor = reference.load_object(compressor)[0] if isinstance(compressor, str) else compressor
         self.min_compress_len = min_compress_len
 
@@ -186,10 +187,21 @@ class Sessions(plugin.Plugin):
           - ``use_same_state`` -- is a copy of this state to be created?
           - ``data`` -- the objects graph
         """
-        self.logger.debug('storing session {} - state {}'.format(session_id, state_id))
+        self.logger.debug('storing session %s - state %s', session_id, state_id)
+
         session_data, state_data = self.serializer.dumps(data, not use_same_state)
-        if self.min_compress_len and len(state_data) > self.min_compress_len:
+        state_data_len = len(state_data)
+        if self.min_compress_len and state_data_len > self.min_compress_len:
             state_data = self.compressor.compress(state_data)
+            if self.debug:
+                self.logger.debug(
+                    '%d -> %d state bytes (compression %d%%) for session %s - state %s',
+                    state_data_len,
+                    len(state_data),
+                    100 - (len(state_data) * 100 // state_data_len),
+                    session_id,
+                    state_id,
+                )
 
         self._store(session_id, state_id, secure_token, use_same_state, session_data, state_data)
 
