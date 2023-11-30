@@ -39,7 +39,6 @@ dev = [
     'sphinx',
     'sphinx_rtd_theme',
     'pre-commit',
-    'black',
     'ruff',
     'pytest',
     'build',
@@ -55,20 +54,15 @@ Tracker = 'https://github.com/nagareproject/services-sessions/issues'
 [tool.distutils.bdist_wheel]
 universal = true
 
-[tool.black]
-line-length = 120
-target-version = ['py38']
-skip-string-normalization = true
-
 [tool.ruff]
 select = ['C4', 'COM', 'D', 'E', 'ERA', 'F', 'I', 'ISC', 'INP', 'PIE', 'Q', 'S', 'SIM', 'TID', 'W', 'YTT']
-ignore = ['COM812', 'D10', 'D401', 'S311']
+ignore = ['COM812', 'D10', 'D401', 'S311', 'ISC001']
 line-length = 120
 src = ['src']
 
 [tool.ruff.flake8-quotes]
 inline-quotes = 'single'
-multiline-quotes = 'single'
+multiline-quotes = 'double'
 
 [tool.ruff.pydocstyle]
 convention = 'google'
@@ -76,6 +70,9 @@ convention = 'google'
 [tool.ruff.isort]
 known-third-party = ['nagare']
 force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = 'single'
 
 [tool.pytest.ini_options]
 testpaths = ['tests']
