@@ -28,11 +28,10 @@ except ModuleNotFoundError:
 
     class Pickler(Pickler):
         def reducer_override(self, obj):
-            return (
-                (ll, (dumps(obj.__code__), obj.__closure__ and [cell.cell_contents for cell in obj.__closure__]))
-                if isinstance(obj, LambdaType) and (obj.__code__.co_name == '<lambda>')
-                else NotImplemented
-            )
+            if not isinstance(obj, LambdaType) or (obj.__code__.co_name != '<lambda>'):
+                return NotImplemented
+
+            return ll, (dumps(obj.__code__), obj.__closure__ and [cell.cell_contents for cell in obj.__closure__])
 
     def ll(code, closure):
         return FunctionType(
@@ -40,7 +39,7 @@ except ModuleNotFoundError:
             globals(),
             None,
             None,
-            closure and tuple((lambda: cell).__closure__[0] for cell in closure),
+            closure and tuple((lambda x: lambda: x)(cell).__closure__[0] for cell in closure),
         )
 
 
