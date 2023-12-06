@@ -10,19 +10,38 @@
 """Base classes for the sessions management."""
 
 import gzip
-import random
 import zlib
-
-try:
-    from cPickle import Pickler, Unpickler
-except ImportError:
-    from pickle import Pickler, Unpickler
+import random
+from types import LambdaType, FunctionType
+from pickle import Pickler, Unpickler
+from marshal import dumps, loads
 
 from nagare.server import reference
-from nagare.server.services import SelectionService
 from nagare.services import plugin
+from nagare.server.services import SelectionService
 
 from . import serializer
+
+try:
+    import stackless  # noqa: F401
+except ModuleNotFoundError:
+
+    class Pickler(Pickler):
+        def reducer_override(self, obj):
+            return (
+                (ll, (dumps(obj.__code__), obj.__closure__ and [cell.cell_contents for cell in obj.__closure__]))
+                if isinstance(obj, LambdaType) and (obj.__code__.co_name == '<lambda>')
+                else NotImplemented
+            )
+
+    def ll(code, closure):
+        return FunctionType(
+            loads(code),  # noqa: S302
+            globals(),
+            None,
+            None,
+            closure and tuple((lambda: cell).__closure__[0] for cell in closure),
+        )
 
 
 class Compressor(object):
