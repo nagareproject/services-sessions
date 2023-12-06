@@ -9,8 +9,8 @@
 
 from contextlib import contextmanager
 
-from nagare.services import plugin
 from nagare.session import set_session
+from nagare.services import plugin
 from nagare.sessions import exceptions
 
 
