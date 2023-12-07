@@ -9,6 +9,7 @@
 
 """Base classes for the sessions management."""
 
+import sys
 import gzip
 import zlib
 import random
@@ -28,17 +29,26 @@ except ModuleNotFoundError:
 
     class Pickler(Pickler):
         def reducer_override(self, obj):
-            if not isinstance(obj, LambdaType) or (obj.__code__.co_name != '<lambda>'):
+            if not isinstance(obj, LambdaType) or ('.<locals>.' not in obj.__qualname__):
                 return NotImplemented
 
-            return ll, (dumps(obj.__code__), obj.__closure__ and [cell.cell_contents for cell in obj.__closure__])
+            return ll, (
+                obj.__module__,
+                dumps(obj.__code__),
+                obj.__defaults__,
+                obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
+            )
 
-    def ll(code, closure):
+    def ll(module, code, defaults, closure):
+        mglobals = sys.modules[module].__dict__
+        fglobals = {k: v for k, v in mglobals.items() if not (k.startswith('__') and k.endswith('__'))}
+        fglobals['__builtins__'] = mglobals['__builtins__']
+
         return FunctionType(
             loads(code),  # noqa: S302
-            globals(),
+            fglobals,
             None,
-            None,
+            defaults,
             closure and tuple((lambda x: lambda: x)(cell).__closure__[0] for cell in closure),
         )
 
