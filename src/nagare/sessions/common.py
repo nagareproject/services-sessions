@@ -44,13 +44,15 @@ except ModuleNotFoundError:
         fglobals = {k: v for k, v in mglobals.items() if not (k.startswith('__') and k.endswith('__'))}
         fglobals['__builtins__'] = mglobals['__builtins__']
 
-        return FunctionType(
+        lambda_ = FunctionType(
             loads(code),  # noqa: S302
             fglobals,
             None,
             defaults,
             closure and tuple((lambda x: lambda: x)(cell).__closure__[0] for cell in closure),
         )
+        lambda_.__module__ = module
+        return lambda_
 
 
 class Compressor(object):
