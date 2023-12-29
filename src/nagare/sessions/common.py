@@ -29,7 +29,9 @@ except ModuleNotFoundError:
 
     class Pickler(Pickler):
         def reducer_override(self, obj):
-            if not isinstance(obj, LambdaType) or ('.<locals>.' not in obj.__qualname__):
+            if not isinstance(obj, LambdaType) or (
+                (obj.__qualname__ != '<lambda>') and ('.<locals>.' not in obj.__qualname__)
+            ):
                 return NotImplemented
 
             return ll, (
