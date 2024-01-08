@@ -13,7 +13,7 @@ import sys
 import gzip
 import zlib
 import random
-from types import LambdaType
+from types import LambdaType, FunctionType
 from pickle import Pickler, Unpickler
 from marshal import dumps, loads
 
@@ -29,15 +29,17 @@ except ModuleNotFoundError:
 
     class Pickler(Pickler):
         def reducer_override(self, obj):
-            if getattr(obj, '__name__', '') != '<lambda>':
-                return NotImplemented
+            if (getattr(obj, '__name__', '') == '<lambda>') or (
+                isinstance(obj, FunctionType) and ('.<locals>.' in obj.__qualname__)
+            ):
+                return ll, (
+                    obj.__module__,
+                    dumps(obj.__code__),
+                    obj.__defaults__,
+                    obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
+                )
 
-            return ll, (
-                obj.__module__,
-                dumps(obj.__code__),
-                obj.__defaults__,
-                obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
-            )
+            return NotImplemented
 
     def ll(module, code, defaults, closure):
         mglobals = sys.modules[module].__dict__
