@@ -13,9 +13,11 @@ import sys
 import gzip
 import zlib
 import random
-from types import LambdaType, FunctionType
+import copyreg
+from types import LambdaType, ModuleType, FunctionType
 from pickle import Pickler, Unpickler
 from marshal import dumps, loads
+from importlib import import_module
 
 from nagare.server import reference
 from nagare.services import plugin
@@ -26,20 +28,6 @@ from . import serializer
 try:
     import stackless  # noqa: F401
 except ModuleNotFoundError:
-
-    class Pickler(Pickler):
-        def reducer_override(self, obj):
-            if (getattr(obj, '__name__', '') == '<lambda>') or (
-                isinstance(obj, FunctionType) and ('.<locals>.' in obj.__qualname__)
-            ):
-                return ll, (
-                    obj.__module__,
-                    dumps(obj.__code__),
-                    obj.__defaults__,
-                    obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
-                )
-
-            return NotImplemented
 
     def ll(module, code, defaults, closure):
         mglobals = sys.modules[module].__dict__
@@ -55,6 +43,25 @@ except ModuleNotFoundError:
         )
         lambda_.__module__ = module
         return lambda_
+
+    def lm(module_name):
+        return import_module(module_name)
+
+    class Pickler(Pickler):
+        def reducer_override(self, obj):
+            if (getattr(obj, '__name__', '') == '<lambda>') or (
+                isinstance(obj, FunctionType) and ('.<locals>.' in obj.__qualname__)
+            ):
+                return ll, (
+                    obj.__module__,
+                    dumps(obj.__code__),
+                    obj.__defaults__,
+                    obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
+                )
+
+            return NotImplemented
+
+    copyreg.pickle(ModuleType, lambda m: (lm, (m.__name__,)))
 
 
 class Compressor(object):
