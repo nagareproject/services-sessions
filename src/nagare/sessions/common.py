@@ -64,6 +64,10 @@ except ModuleNotFoundError:
     copyreg.pickle(ModuleType, lambda m: (lm, (m.__name__,)))
 
 
+class Unpickler(Unpickler):  # In Python>=3.13, the `persistent_load()` method can only be changed in a derivated class
+    pass
+
+
 class Compressor(object):
     @classmethod
     def compress(cls, data):
