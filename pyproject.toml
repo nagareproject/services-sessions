@@ -1,5 +1,5 @@
 # =-
-# (C)opyright Net-ng 2023
+# (C)opyright Net-ng 2008-2024
 #
 # This is Net-ng proprietary source code
 # Any reproduction modification or use without prior written
@@ -24,6 +24,7 @@ license = {file = 'LICENSE.txt'}
 requires-python = '>=3.7'
 dependencies = [
     'nagare-services',
+    'nagare-server',
     'nagare-server-http'
 ]
 
@@ -50,28 +51,17 @@ Documentation = 'https://nagare.org/doc'
 Source = 'https://github.com/nagareproject/services-sessions'
 Tracker = 'https://github.com/nagareproject/services-sessions/issues'
 
-[tool.distutils.bdist_wheel]
-universal = true
-
 [tool.ruff]
+src = ['src']
+line-length = 120
+format.quote-style = 'single'
+
+[tool.ruff.lint]
 select = ['C4', 'COM', 'D', 'E', 'ERA', 'F', 'I', 'ISC', 'INP', 'PIE', 'Q', 'S', 'SIM', 'TID', 'W', 'YTT']
 ignore = ['COM812', 'D10', 'D401', 'S311', 'ISC001']
-line-length = 120
-src = ['src']
-
-[tool.ruff.flake8-quotes]
-inline-quotes = 'single'
-multiline-quotes = 'double'
-
-[tool.ruff.pydocstyle]
-convention = 'google'
-
-[tool.ruff.isort]
-known-third-party = ['nagare']
-length-sort = true
-
-[tool.ruff.format]
-quote-style = 'single'
+isort.length-sort = true
+pydocstyle.convention = 'google'
+flake8-quotes.inline-quotes = 'single'
 
 [tool.pytest.ini_options]
 testpaths = ['tests']

@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2023 Net-ng.
+# Copyright (c) 2008-2024 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -93,7 +93,7 @@ class GZipCompressor(Compressor):
 
     @staticmethod
     def is_compressed(data):
-        return (data[0] == 0o37) and (data[1] == 0o213)
+        return data and (data[0] == 0o37) and (data[1] == 0o213)
 
 
 class ZLibCompressor(Compressor):
@@ -102,7 +102,7 @@ class ZLibCompressor(Compressor):
 
     @staticmethod
     def is_compressed(data):
-        return (data[0] == 0x78) and ((data[0] * 256 + data[1]) % 31 == 0)
+        return data and (data[0] == 0x78) and ((data[0] * 256 + data[1]) % 31 == 0)
 
 
 class Sessions(plugin.Plugin):
