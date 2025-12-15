@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2024 Net-ng.
+# Copyright (c) 2014-2025 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -19,7 +19,7 @@ from pickle import Pickler, Unpickler
 from marshal import dumps, loads
 from importlib import import_module
 
-from nagare.server import reference
+from nagare.server import reference, publishers
 from nagare.services import plugin
 from nagare.server.services import SelectionService
 
@@ -68,7 +68,7 @@ class Unpickler(Unpickler):  # In Python>=3.13, the `persistent_load()` method c
     pass
 
 
-class Compressor(object):
+class Compressor:
     @classmethod
     def compress(cls, data):
         compressed_data = cls._compress(data)
@@ -113,16 +113,16 @@ class Sessions(plugin.Plugin):
     """The sessions managers."""
 
     PLUGIN_CATEGORY = 'nagare.sessions'
+    LOAD_PRIORITY = publishers.Publishers.LOAD_PRIORITY + 1
 
-    CONFIG_SPEC = dict(
-        plugin.Plugin.CONFIG_SPEC,
-        debug='boolean(default=False)',
-        pickler='string(default="nagare.sessions.common:Pickler")',
-        unpickler='string(default="nagare.sessions.common:Unpickler")',
-        serializer='string(default="nagare.sessions.serializer:Dummy")',
-        compressor='string(default="nagare.sessions.common:ZLibCompressor")',
-        min_compress_len='integer(default=0)',
-    )
+    CONFIG_SPEC = plugin.Plugin.CONFIG_SPEC | {
+        'debug': 'boolean(default=False)',
+        'pickler': 'string(default="nagare.sessions.common:Pickler")',
+        'unpickler': 'string(default="nagare.sessions.common:Unpickler")',
+        'serializer': 'string(default="nagare.sessions.serializer:Dummy")',
+        'compressor': 'string(default="nagare.sessions.common:ZLibCompressor")',
+        'min_compress_len': 'integer(default=0)',
+    }
 
     def __init__(
         self,
@@ -144,7 +144,7 @@ class Sessions(plugin.Plugin):
           - ``pickler`` -- pickler used by the serializer
           - ``unpickler`` -- unpickler used by the serializer
         """
-        super(Sessions, self).__init__(
+        super().__init__(
             name,
             dist,
             debug=debug,
@@ -216,7 +216,7 @@ class Sessions(plugin.Plugin):
           - secure number associated to the session
           - objects graph
         """
-        self.logger.debug('fetching session {} - state {}'.format(session_id, state_id))
+        self.logger.debug('fetching session %s - state %s', session_id, state_id)
         new_state_id, secure_token, session_data, state_data = self._fetch(session_id, state_id)
         return (new_state_id, secure_token, self.serializer.loads(session_data, self.compressor.decompress(state_data)))
 
@@ -336,15 +336,14 @@ class Sessions(plugin.Plugin):
 
 class SessionsSelection(SelectionService):
     ENTRY_POINTS = 'nagare.sessions'
-    CONFIG_SPEC = dict(
-        SelectionService.CONFIG_SPEC,
-        type='string(default="memory", help="name of the session entry-point, registered under [nagare.sessions]")',
-    )
-    LOAD_PRIORITY = 90
+    CONFIG_SPEC = SelectionService.CONFIG_SPEC | {
+        'type': 'string(default="memory", help="name of the session entry-point, registered under [nagare.sessions]")'
+    }
+    LOAD_PRIORITY = publishers.Publishers.LOAD_PRIORITY + 1
 
     @property
     def DESC(self):
-        return 'Proxy to the <%s> sessions manager' % self.selector
+        return f'Proxy to the <{self.selector}> sessions manager'
 
     def handle_start(self, app):
         self.service.handle_start(app)

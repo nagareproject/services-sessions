@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2024 Net-ng.
+# Copyright (c) 2014-2025 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -14,7 +14,7 @@ from nagare.services import plugin
 from nagare.sessions import exceptions
 
 
-class Session(object):
+class Session:
     def __init__(self, session_service, is_new, secure_token, session_id, state_id, use_same_state):
         self.session = session_service
         self.is_new = is_new
@@ -59,7 +59,7 @@ class Session(object):
 
         with lock as status:
             if not status:
-                raise exceptions.LockError('Session {}, state {}'.format(self.session_id, self.state_id))
+                raise exceptions.LockError(f'Session {self.session_id}, state {self.state_id}')
 
             yield self.fetch()
 
@@ -70,11 +70,10 @@ class Session(object):
 
 
 class SessionService(plugin.Plugin):
-    LOAD_PRIORITY = 100
-    CONFIG_SPEC = dict(
-        plugin.Plugin.CONFIG_SPEC,
-        states_history='boolean(default=False)',
-        session_cookie={
+    LOAD_PRIORITY = 10
+    CONFIG_SPEC = plugin.Plugin.CONFIG_SPEC | {
+        'states_history': 'boolean(default=False)',
+        'session_cookie': {
             'name': 'string(default="nagare-session")',
             'max_age': 'integer(default=None)',
             'path': 'string(default="$app_url")',
@@ -85,7 +84,7 @@ class SessionService(plugin.Plugin):
             'overwrite': 'boolean(default=False)',
             'samesite': 'string(default="lax")',
         },
-        security_cookie={
+        'security_cookie': {
             'name': 'string(default="nagare-token")',
             'max_age': 'integer(default=None)',
             'path': 'string(default="$app_url")',
@@ -96,12 +95,10 @@ class SessionService(plugin.Plugin):
             'overwrite': 'boolean(default=False)',
             'samesite': 'string(default="lax")',
         },
-    )
+    }
 
-    def __init__(
-        self, name, dist, states_history, session_cookie, security_cookie, session_service, services_service, **config
-    ):
-        super(SessionService, self).__init__(
+    def __init__(self, name, dist, states_history, session_cookie, security_cookie, **config):
+        super().__init__(
             name,
             dist,
             states_history=states_history,
@@ -111,15 +108,13 @@ class SessionService(plugin.Plugin):
         )
 
         self.states_history = states_history
-
         self.session_cookie = session_cookie
 
         if not security_cookie['samesite']:
             del security_cookie['samesite']
         self.security_cookie = security_cookie
 
-        self.session = session_service.service
-        self.services = services_service
+        self.session = None
 
     @staticmethod
     def get_cookie(request, name):

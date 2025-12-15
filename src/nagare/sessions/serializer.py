@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2008-2024 Net-ng.
+# Copyright (c) 2014-2025 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -7,31 +7,20 @@
 # this distribution.
 # --
 
-import sys
-
-try:
-    import copy_reg as copyreg
-except ImportError:
-    import copyreg
-
-try:
-    from cStringIO import StringIO as BuffIO
-except ImportError:
-    from io import BytesIO as BuffIO
+import copyreg
+from io import BytesIO as BuffIO
 
 from .exceptions import StateError
 
-PY2 = sys.version_info.major == 2
 
-
-class DummyFile(object):
+class DummyFile:
     """A write-only file that does nothing."""
 
     def write(self, data):
         pass
 
 
-class Result(object):
+class Result:
     def __init__(self):
         self.session_data = {}
         self.tasklets = set()
@@ -39,7 +28,7 @@ class Result(object):
         self.components = 0
 
 
-class Dummy(object):
+class Dummy:
     def __init__(self, pickler, unpickler, debug, logger):
         """Initialization.
 
@@ -71,16 +60,12 @@ class Dummy(object):
         def persistent_id(o):
             return self.persistent_id(o, clean_callbacks, result)
 
-        if PY2:
-            if self.persistent_id:
-                pickler.inst_persistent_id = persistent_id
-        else:
-            if self.persistent_id:
-                pickler.persistent_id = persistent_id
+        if self.persistent_id:
+            pickler.persistent_id = persistent_id
 
-            dispatch_table = copyreg.dispatch_table.copy()
-            dispatch_table.update(self.dispatch_table(clean_callbacks, result))
-            pickler.dispatch_table = dispatch_table
+        dispatch_table = copyreg.dispatch_table.copy()
+        dispatch_table.update(self.dispatch_table(clean_callbacks, result))
+        pickler.dispatch_table = dispatch_table
 
         pickler.dump(data)
 
@@ -135,11 +120,7 @@ class Pickle(Dummy):
         # Pickle the data
         session_data, components, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
 
-        # Pickle the callbacks
-        if PY2:
-            pickler.inst_persistent_id = lambda o: None
-        else:
-            pickler.persistent_id = lambda o: None
+        pickler.persistent_id = lambda o: None
         pickler.dump(callbacks)
 
         # Kill all the blocked tasklets, which are now serialized
