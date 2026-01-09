@@ -23,7 +23,6 @@ class DummyFile:
 class Result:
     def __init__(self):
         self.session_data = {}
-        self.tasklets = set()
         self.callbacks = {}
         self.components = 0
 
@@ -56,20 +55,15 @@ class Dummy:
         """
         result = Result()
 
-        # Serialize the objects graph and extract all the callbacks
-        def persistent_id(o):
-            return self.persistent_id(o, clean_callbacks, result)
-
         if self.persistent_id:
-            pickler.persistent_id = persistent_id
+            pickler.persistent_id = lambda o: self.persistent_id(o, clean_callbacks, result)
 
-        dispatch_table = copyreg.dispatch_table.copy()
-        dispatch_table.update(self.dispatch_table(clean_callbacks, result))
-        pickler.dispatch_table = dispatch_table
+        pickler.dispatch_table = copyreg.dispatch_table | self.dispatch_table(clean_callbacks, result)
 
+        # Serialize the objects graph and extract all the callbacks
         pickler.dump(data)
 
-        return result.session_data, result.components, result.callbacks, result.tasklets
+        return result.session_data, result.components, result.callbacks
 
     def dumps(self, data, clean_callbacks):
         """Serialize an objects graph.
@@ -83,7 +77,7 @@ class Dummy:
           - data kept into the state
         """
         pickler = self.pickler(DummyFile(), protocol=-1)
-        session_data, components, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
+        session_data, components, callbacks = self._dumps(pickler, data, clean_callbacks)
 
         # This dummy serializer returns the data untouched
         return None, (data, callbacks)
@@ -118,14 +112,10 @@ class Pickle(Dummy):
         pickler = self.pickler(f, protocol=-1)
 
         # Pickle the data
-        session_data, components, callbacks, tasklets = self._dumps(pickler, data, clean_callbacks)
+        session_data, components, callbacks = self._dumps(pickler, data, clean_callbacks)
 
         pickler.persistent_id = lambda o: None
         pickler.dump(callbacks)
-
-        # Kill all the blocked tasklets, which are now serialized
-        for t in tasklets:
-            t.kill()
 
         # The pickled data are returned
         state_data = f.getvalue()
@@ -137,8 +127,7 @@ class Pickle(Dummy):
         if self.debug:
             if components:
                 self.logger.debug(
-                    '%d tasklets - %d components - %d callbacks - %d session bytes - %d state bytes',
-                    len(tasklets),
+                    '%d components - %d callbacks - %d session bytes - %d state bytes',
                     components,
                     len(callbacks),
                     len(session_data),

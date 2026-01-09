@@ -70,7 +70,7 @@ class Session:
 
 
 class SessionService(plugin.Plugin):
-    LOAD_PRIORITY = 10
+    LOAD_PRIORITY = 100
     CONFIG_SPEC = plugin.Plugin.CONFIG_SPEC | {
         'states_history': 'boolean(default=False)',
         'session_cookie': {
@@ -97,7 +97,7 @@ class SessionService(plugin.Plugin):
         },
     }
 
-    def __init__(self, name, dist, states_history, session_cookie, security_cookie, **config):
+    def __init__(self, name, dist, states_history, session_cookie, security_cookie, session_service, **config):
         super().__init__(
             name,
             dist,
@@ -114,7 +114,7 @@ class SessionService(plugin.Plugin):
             del security_cookie['samesite']
         self.security_cookie = security_cookie
 
-        self.session = None
+        self.session = session_service.service
 
     @staticmethod
     def get_cookie(request, name):

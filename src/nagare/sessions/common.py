@@ -19,49 +19,49 @@ from pickle import Pickler, Unpickler
 from marshal import dumps, loads
 from importlib import import_module
 
-from nagare.server import reference, publishers
+from nagare.server import reference
 from nagare.services import plugin
 from nagare.server.services import SelectionService
 
 from . import serializer
 
-try:
-    import stackless  # noqa: F401
-except ModuleNotFoundError:
 
-    def ll(module, code, defaults, closure):
-        mglobals = sys.modules[module].__dict__
-        fglobals = {k: v for k, v in mglobals.items() if not (k.startswith('__') and k.endswith('__'))}
-        fglobals['__builtins__'] = mglobals['__builtins__']
+def ll(module, code, defaults, closure):
+    mglobals = sys.modules[module].__dict__
+    fglobals = {k: v for k, v in mglobals.items() if not (k.startswith('__') and k.endswith('__'))}
+    fglobals['__builtins__'] = mglobals['__builtins__']
 
-        lambda_ = LambdaType(
-            loads(code),  # noqa: S302
-            fglobals,
-            None,
-            defaults,
-            closure and tuple((lambda x: lambda: x)(cell).__closure__[0] for cell in closure),
-        )
-        lambda_.__module__ = module
-        return lambda_
+    lambda_ = LambdaType(
+        loads(code),  # noqa: S302
+        fglobals,
+        None,
+        defaults,
+        closure and tuple((lambda x: lambda: x)(cell).__closure__[0] for cell in closure),
+    )
+    lambda_.__module__ = module
+    return lambda_
 
-    def lm(module_name):
-        return import_module(module_name)
 
-    class Pickler(Pickler):
-        def reducer_override(self, obj):
-            if (getattr(obj, '__name__', '') == '<lambda>') or (
-                isinstance(obj, FunctionType) and ('.<locals>.' in obj.__qualname__)
-            ):
-                return ll, (
-                    obj.__module__,
-                    dumps(obj.__code__),
-                    obj.__defaults__,
-                    obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
-                )
+def lm(module_name):
+    return import_module(module_name)
 
-            return NotImplemented
 
-    copyreg.pickle(ModuleType, lambda m: (lm, (m.__name__,)))
+class Pickler(Pickler):
+    def reducer_override(self, obj):
+        if (getattr(obj, '__name__', '') == '<lambda>') or (
+            isinstance(obj, FunctionType) and ('.<locals>.' in obj.__qualname__)
+        ):
+            return ll, (
+                obj.__module__,
+                dumps(obj.__code__),
+                obj.__defaults__,
+                obj.__closure__ and [cell.cell_contents for cell in obj.__closure__],
+            )
+
+        return NotImplemented
+
+
+copyreg.pickle(ModuleType, lambda m: (lm, (m.__name__,)))
 
 
 class Unpickler(Unpickler):  # In Python>=3.13, the `persistent_load()` method can only be changed in a derivated class
@@ -113,7 +113,6 @@ class Sessions(plugin.Plugin):
     """The sessions managers."""
 
     PLUGIN_CATEGORY = 'nagare.sessions'
-    LOAD_PRIORITY = publishers.Publishers.LOAD_PRIORITY + 1
 
     CONFIG_SPEC = plugin.Plugin.CONFIG_SPEC | {
         'debug': 'boolean(default=False)',
@@ -339,7 +338,7 @@ class SessionsSelection(SelectionService):
     CONFIG_SPEC = SelectionService.CONFIG_SPEC | {
         'type': 'string(default="memory", help="name of the session entry-point, registered under [nagare.sessions]")'
     }
-    LOAD_PRIORITY = publishers.Publishers.LOAD_PRIORITY + 1
+    LOAD_PRIORITY = 90
 
     @property
     def DESC(self):
