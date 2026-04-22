@@ -1,5 +1,5 @@
 # --
-# Copyright (c) 2014-2025 Net-ng.
+# Copyright (c) 2014-2026 Net-ng.
 # All rights reserved.
 #
 # This software is licensed under the BSD License, as described in
@@ -8,7 +8,7 @@
 # --
 
 import copyreg
-from io import BytesIO as BuffIO
+from io import BytesIO
 
 from .exceptions import StateError
 
@@ -108,7 +108,7 @@ class Pickle(Dummy):
           - data kept into the session
           - data kept into the state
         """
-        f = BuffIO()
+        f = BytesIO()
         pickler = self.pickler(f, protocol=-1)
 
         # Pickle the data
@@ -120,7 +120,7 @@ class Pickle(Dummy):
         # The pickled data are returned
         state_data = f.getvalue()
 
-        f = BuffIO()
+        f = BytesIO()
         self.pickler(f, protocol=-1).dump(session_data)
         session_data = f.getvalue()
 
@@ -149,9 +149,9 @@ class Pickle(Dummy):
           - the objects graph
           - the callbacks
         """
-        p = self.unpickler(BuffIO(state_data))
+        p = self.unpickler(BytesIO(state_data))
         if session_data:
-            session_data = self.unpickler(BuffIO(session_data)).load()
+            session_data = self.unpickler(BytesIO(session_data)).load()
             p.persistent_load = lambda i: session_data.get(int(i))
 
         try:
