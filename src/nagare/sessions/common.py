@@ -133,7 +133,6 @@ class Sessions(plugin.Plugin):
         serializer=serializer.Dummy,
         compressor=ZLibCompressor,
         min_compress_len=0,
-        publisher_service=None,
         **config,
     ):
         """Initialization.
@@ -154,10 +153,6 @@ class Sessions(plugin.Plugin):
             min_compress_len=min_compress_len,
             **config,
         )
-
-        publisher = publisher_service.service
-        self.check_concurrence(publisher.has_multi_processes, publisher.has_multi_threads)
-
         pickler = reference.load_object(pickler)[0] if isinstance(pickler, str) else pickler
         unpickler = reference.load_object(unpickler)[0] if isinstance(unpickler, str) else unpickler
         serializer = reference.load_object(serializer)[0] if isinstance(serializer, str) else serializer
@@ -248,9 +243,6 @@ class Sessions(plugin.Plugin):
         self._store(session_id, state_id, secure_token, use_same_state, session_data, state_data)
 
     # -------------------------------------------------------------------------
-
-    def check_concurrence(self, multi_processes, multi_threads):
-        raise NotImplementedError()
 
     @staticmethod
     def check_session_id(session_id):
